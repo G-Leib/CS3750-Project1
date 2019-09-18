@@ -1,4 +1,4 @@
-# PROJECT 1
+#
 
 This is project 1 for CS3750
 
