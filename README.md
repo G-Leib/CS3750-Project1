@@ -2,6 +2,6 @@
 
 This is project 1 for CS3750
 
-Collaborators include:
-Gil Leibovich
-Dominick Licciardi
+Collaborators include:<br>
+Gil Leibovich<br>
+Dominick Licciardi<br>
