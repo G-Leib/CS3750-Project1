@@ -16,11 +16,11 @@ import java.math.BigInteger;
 
 import javax.crypto.Cipher;
 
-public class RSAConfidentiality {
+public class KeyGen {
     public static void main(String[] args) throws Exception {
 
         // byte[] input = "012340123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF".getBytes();
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        // Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 
         //Generate a pair of keys
         SecureRandom Xrandom = new SecureRandom();
@@ -37,10 +37,10 @@ public class RSAConfidentiality {
         Key YprivKey = Ypair.getPrivate(); // gets key
 
         /* first, encryption & decryption via the paired keys */
-        cipher.init(Cipher.ENCRYPT_MODE, XpubKey, Xrandom);
-        cipher.init(Cipher.ENCRYPT_MODE, YpubKey, Yrandom);
+        // cipher.init(Cipher.ENCRYPT_MODE, XpubKey, Xrandom);
+        // cipher.init(Cipher.ENCRYPT_MODE, YpubKey, Yrandom);
 
-        byte[] cipherText = cipher.doFinal(input);
+        // byte[] cipherText = cipher.doFinal(input);
 
         System.out.println("cipherText: block size = " + cipher.getBlockSize());
         for (int i=0, j=0; i<cipherText.length; i++, j++) {
@@ -52,10 +52,10 @@ public class RSAConfidentiality {
         }
         System.out.println("");
 
-        cipher.init(Cipher.DECRYPT_MODE, XprivKey);
-        cipher.init(Cipher.DECRYPT_MODE, YprivKey);
-        byte[] plainText = cipher.doFinal(cipherText);
-        System.out.println("plainText : " + new String(plainText) + "&\n");
+        // cipher.init(Cipher.DECRYPT_MODE, XprivKey);
+        // cipher.init(Cipher.DECRYPT_MODE, YprivKey);
+        // byte[] plainText = cipher.doFinal(cipherText);
+        // System.out.println("plainText : " + new String(plainText) + "&\n");
 
     /* next, store the keys to files, read them back from files,
        and then, encrypt & decrypt using the keys from files. */
@@ -98,29 +98,29 @@ public class RSAConfidentiality {
         PrivateKey YprivKey2 = readPrivKeyFromFile("YPrivate.key");
 
         //encrypt & decrypt using the keys from the files
-        byte[] input2 = "Hello World! (using the keys from files)".getBytes();
+    //     byte[] input2 = "Hello World! (using the keys from files)".getBytes();
 
-        cipher.init(Cipher.ENCRYPT_MODE, XpubKey2, Xrandom);
-        cipher.init(Cipher.ENCRYPT_MODE, YpubKey2, Yrandom);
+    //     cipher.init(Cipher.ENCRYPT_MODE, XpubKey2, Xrandom);
+    //     cipher.init(Cipher.ENCRYPT_MODE, YpubKey2, Yrandom);
 
-        byte[] cipherText2 = cipher.doFinal(input2);
+    //     byte[] cipherText2 = cipher.doFinal(input2);
 
-        System.out.println("cipherText2:");
-        for (int i=0, j=0; i<cipherText2.length; i++, j++) {
-            System.out.format("%2X ", new Byte(cipherText2[i])) ;
-            if (j >= 15) {
-                System.out.println("");
-                j=-1;
-            }
-        }
-        System.out.println("");
+    //     System.out.println("cipherText2:");
+    //     for (int i=0, j=0; i<cipherText2.length; i++, j++) {
+    //         System.out.format("%2X ", new Byte(cipherText2[i])) ;
+    //         if (j >= 15) {
+    //             System.out.println("");
+    //             j=-1;
+    //         }
+    //     }
+    //     System.out.println("");
 
-        cipher.init(Cipher.DECRYPT_MODE, XprivKey2);
-        cipher.init(Cipher.DECRYPT_MODE, YprivKey2);
-        byte[] plainText2 = cipher.doFinal(cipherText2);
-        System.out.println("plainText2 : " + new String(plainText2) + "\n");
+    //     cipher.init(Cipher.DECRYPT_MODE, XprivKey2);
+    //     cipher.init(Cipher.DECRYPT_MODE, YprivKey2);
+    //     byte[] plainText2 = cipher.doFinal(cipherText2);
+    //     System.out.println("plainText2 : " + new String(plainText2) + "\n");
 
-    }
+    // }
 
 
     //save the prameters of the public and private keys to file

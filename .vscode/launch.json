@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - KeyGen",
+            "request": "launch",
+            "mainClass": "KeyGen"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - RSAConfidentiality",
+            "request": "launch",
+            "mainClass": "RSAConfidentiality"
+        }
+    ]
+}
