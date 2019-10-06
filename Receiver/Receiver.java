@@ -23,7 +23,6 @@ public class Receiver {
     public static String symmetricKey;
     public static byte[] symmetricBytes;
     public static PublicKey XpubKey;
-    //public static String decMsg;
     public static byte[] digSig;
 
 
@@ -50,8 +49,13 @@ public class Receiver {
         // Step 5:
         // Parse digital signature and message from decrypted file
         // Save message to user specified message file
-        parseDecryptedMsg("message.ds-msg", messageFile);
+        byte[] digSig = parseDecryptedMsg("message.ds-msg", messageFile);
+        // Decrypt digital signature using X Public key with RSA
+        rsaDecrypt(digSig);
 
+        // Step 6:
+        // Hash message using SHA256 and and compare digital digests
+        verifySha256(messageFile, "message.dd");
     }
 
     static byte[] trim(byte[] bytes) {
@@ -90,7 +94,7 @@ public class Receiver {
 
     public static byte[] aesDecrypt(String encryptedFile) throws Exception {
         // Reading file as bytes
-        byte[] cipherBytes = stringToByteArray(encryptedFile);
+        byte[] cipherBytes = fileStringToByteArray(encryptedFile);
         System.out.println("file: " + cipherBytes);
         byte[] iv = new byte[16];
         String IV = "AAAAAAAAAAAAAAAA"; // do not need for AES/ECB/PKCS5Padding mode
@@ -113,38 +117,102 @@ public class Receiver {
             }
         }
 
-        System.out.println("\nDecrypted bytes: " + plainBytes);
-        for (int i = 0, j = 0; i < plainBytes.length; i++, j++) {
-            System.out.format("%02X ", plainBytes[i]);
-            ds_out.format("%02X ", plainBytes[i]);
+        String plainText = new String(plainBytes);
+
+        System.out.println("\nDecrypted bytes: " + plainText);
+        ds_out.format(plainText);
+        ds_out.close();
+        return plainBytes;
+    }
+
+    public static byte[] parseDecryptedMsg(String dsMsgFname, String msgOutFname) throws IOException {
+        // Single byte = "XX ", 3 chararacters * 128 [- final space]
+        int dsSize = 128 * 3;
+        
+        // Read file as string
+        Path dsMsgPath = Paths.get(dsMsgFname);
+        String ds_msg = Files.readString(dsMsgPath);
+        
+        // Get first 128 bytes (without space) as string and remaining bytes as message
+        String digSigString = ds_msg.substring(0, dsSize - 1);
+        String messageString = ds_msg.substring(dsSize);
+
+        // Convert digital signature string to bytes
+        byte[] digSigBytes = stringToByteArray(digSigString);
+
+        // Write out message to user specified file
+        PrintWriter msg_out = new PrintWriter(msgOutFname);
+        msg_out.format(messageString);
+        msg_out.close();
+        
+        // Return digital signature in bytes
+        return digSigBytes;
+    }
+
+    public static void rsaDecrypt(byte[] digSig) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipher.init(Cipher.DECRYPT_MODE, XpubKey);
+        byte[] digDigest = cipher.doFinal(digSig);
+
+        PrintWriter dd_out = new PrintWriter("message.dd");
+        
+        System.out.println("Digital digest received:\n");
+        for (int i = 0, j = 0; i < digDigest.length; i++, j++) {
+            System.out.format("%02X ", digDigest[i]);
+            dd_out.format("%02X ", digDigest[i]);
             if (j >= 15) {
                 System.out.println("");
                 j = -1;
             }
         }
-
-        ds_out.close();
-        return plainBytes;
+        dd_out.close();
+        System.out.println("");
     }
 
-    public static void parseDecryptedMsg(String dsMsgFname, String fOutName) throws IOException {
-        int dsSize = 128 * 3;
-        byte[] decBytes = stringToByteArray(dsMsgFname);
-        byte[] digSig[] = Arrays.copyOfRange(decBytes, 0, dsSize);
-        String dsString = new String(decDS);
-        byte[] decMsgBytes = Arrays.copyOfRange(decBytes, dsSize, decBytes.length);
-        String decMsg = new String(decMsgBytes);
+    public static void verifySha256(String messageFile, String ddFile) throws Exception {
+        BufferedInputStream file = new BufferedInputStream(new FileInputStream(messageFile));
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        DigestInputStream in = new DigestInputStream(file, md);
+        int i;
+        byte[] buffer = new byte[BUFFER_SIZE];
+        do {
+            i = in.read(buffer, 0, BUFFER_SIZE);
+        } while (i == BUFFER_SIZE);
+        md = in.getMessageDigest();
+        in.close();
 
-        System.out.println("Dec text: " + decBytes.toString());
-        System.out.println("Digital signature: " + digSig.toString());
-        System.out.println("Message: " + decMsg.toString());
+        byte[] hashCreated = md.digest();
+        byte[] digestReceived = fileStringToByteArray(ddFile);
 
-        return decMsg;
+        System.out.println("Hash of decrypted message:\n");
+        printBytes(hashCreated);
+
+        if (Arrays.equals(hashCreated, digestReceived)) {
+            System.out.println("\nDigital digests match. Message integrity confirmed.\n");
+        } else {
+            System.out.println("\nWARNING: Digital digests do not match. Message integrity may be compromised.\n");
+        }
+        
     }
 
-    public static byte[] stringToByteArray(String fname) throws IOException {
+    public static void printBytes(byte[] byteArr) throws Exception {
+        for (int i = 0, j = 0; i < byteArr.length; i++, j++) {
+            System.out.format("%02X ", byteArr[i]);
+            if (j >= 15) {
+                System.out.println("");
+                j = -1;
+            }
+        }
+    }
+
+    public static byte[] fileStringToByteArray(String fname) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(fname));
         String str = br.readLine();
+
+        return stringToByteArray(str);
+    }
+
+    public static byte[] stringToByteArray(String str) throws IOException {
         String[] splitText = str.split("\\s+");
         int byteInt;
         byte[] byteArr = new byte[splitText.length];
