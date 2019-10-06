@@ -133,9 +133,10 @@ public class Receiver {
         Path dsMsgPath = Paths.get(dsMsgFname);
         String ds_msg = Files.readString(dsMsgPath);
         
-        // Get first 128 bytes (without space) as string and remaining bytes as message
+        // Get first 128 bytes (without space) as string 
         String digSigString = ds_msg.substring(0, dsSize - 1);
-        String messageString = ds_msg.substring(dsSize);
+        // Get remaining bytes as message less final character (extra '\n')
+        String messageString = ds_msg.substring(dsSize, ds_msg.length() -1);
 
         // Convert digital signature string to bytes
         byte[] digSigBytes = stringToByteArray(digSigString);
