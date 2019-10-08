@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
+import java.util.Scanner;
 
 
 public class Sender {
@@ -27,12 +28,18 @@ public class Sender {
 
     public static void main(String[] args) throws Exception {
 
+        String inputFileName;
+        Scanner scan = new Scanner(System.in);  
+        System.out.println("Input the name of the message file: ");
+        inputFileName = scan.nextLine();
+        scan.close();
+        
         // **** SHA/RSA ****
-        sha256("message.txt");
+        sha256(inputFileName);
         // Number 5, String from message.dd to byte[] for RSA/Kx- Encryption
-        stringToByte("message.dd");
+        //stringToByte("message.dd");
         // Number 5, RSA Encryption using Kx- Key.
-        rsaEncrypt();
+        rsaEncrypt(inputFileName);
 
         // **** AES ****
         keyToUTF8("symmetric.key");
@@ -55,19 +62,21 @@ public class Sender {
         in.close();
 
         byte[] hash = md.digest();
-        PrintWriter out = new PrintWriter("message.dd");
+        hashByte = hash;
+        BufferedOutputStream dd_out = new BufferedOutputStream(new FileOutputStream("message.dd"));
         System.out.println("SHA256(M) in Hexadecimal bytes, output to message.dd:");
         for (int k = 0, j = 0; k < hash.length; k++, j++) {
             System.out.format("%02X ", (hash[k])) ;
             // save value to message.dd file
-            out.format("%02X ", (hash[k]));
+            //out.format("%02X ", (hash[k]));
             if (j >= 15) {
                 System.out.println("");
                 j = -1;
             }
         }
+        dd_out.write(hash);
         System.out.println("");
-        out.close();
+        dd_out.close();
 
         return new String(hash);
     }
@@ -145,7 +154,7 @@ public class Sender {
 
             while (line != null) {
                 sb.append(line);
-                sb.append("\n");
+                //sb.append("\n");
                 line = br.readLine();
             }
             symmetricKey = sb.toString();
@@ -155,7 +164,7 @@ public class Sender {
             br.close();
             System.out.println("128-bit UTF-8 encoding of Symmetric.key for AES: ");
             symmetricBytes = symmetricKey.getBytes("UTF-8");
-            symmetricBytes = trim(symmetricBytes);
+            //symmetricBytes = trim(symmetricBytes);
             for (byte x: symmetricBytes) {
                 System.out.print(x + " ");
             }
@@ -170,37 +179,42 @@ public class Sender {
         return Arrays.copyOf(bytes, i );
     }
 
-    public static byte[] rsaEncrypt() throws Exception {
+    public static byte[] rsaEncrypt(String messageInputFile) throws Exception {
 
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        SecureRandom Xrandom = new SecureRandom();
         XprivKey2 = readPrivKeyFromFile("XPrivate.key");
-        cipher.init(Cipher.ENCRYPT_MODE, XprivKey2, Xrandom);
-        PrintWriter out = new PrintWriter("message.ds-msg");
+        cipher.init(Cipher.ENCRYPT_MODE, XprivKey2);
+        BufferedOutputStream dsMsg_out = new BufferedOutputStream(new FileOutputStream("message.ds-msg"));
         byte[] cipherText = cipher.doFinal(hashByte);
         System.out.println("RSA Encryption cipherText: block size = " + cipher.getBlockSize());
         for (int i = 0, j = 0; i < cipherText.length; i++, j++) {
             System.out.format("%02X ", (cipherText[i]));
-            out.format("%02X ", (cipherText[i]));
+            //out.format("%02X ", (cipherText[i]));
             if (j >= 15) {
                 System.out.println("");
                 j = -1;
             }
         }
-        // read from the original message message.txt and append to message.ds-msg
-        try(BufferedReader br = new BufferedReader(new FileReader("message.txt"))) {
-            StringBuilder sb = new StringBuilder();
-            String line = br.readLine();
-            while (line != null) {
-                sb.append(line);
-                sb.append(System.lineSeparator());
-                line = br.readLine();
-            }
-            String orig_message = sb.toString();
-            out.print(orig_message);
-        }
+        dsMsg_out.write(cipherText);
+
+        BufferedInputStream messageFile = new BufferedInputStream(new FileInputStream(messageInputFile));
+        byte[] orig_message = messageFile.readAllBytes();
+        messageFile.close();
+        // // read from the original message message.txt and append to message.ds-msg
+        // try(BufferedReader br = new BufferedReader(new FileReader(messageInputFile))) {
+        //     StringBuilder sb = new StringBuilder();
+        //     String line = br.readLine();
+        //     while (line != null) {
+        //         sb.append(line);
+        //         sb.append(System.lineSeparator());
+        //         line = br.readLine();
+        //     }
+        //     orig_message = sb.toString();
+        //     //out.print(orig_message);
+        // }
+        dsMsg_out.write(orig_message);
         System.out.println("");
-        out.close(); // IT WONT SEND THE DATA WITHOUT THIS LINE
+        dsMsg_out.close(); // IT WONT SEND THE DATA WITHOUT THIS LINE
 
         return cipher.doFinal(hashByte);
     }
@@ -214,18 +228,19 @@ public class Sender {
         Cipher cipher = Cipher.getInstance("AES/CFB/NoPadding", "SunJCE");
         SecretKeySpec key = new SecretKeySpec(symmetricBytes, "AES");
         cipher.init(Cipher.ENCRYPT_MODE, key,new IvParameterSpec(iv));
-        PrintWriter aes_out = new PrintWriter("message.aescipher");
+        BufferedOutputStream aes_out = new BufferedOutputStream(new FileOutputStream("message.aescipher"));
         byte[] AEScipher = cipher.doFinal(dsMsg.getBytes("UTF-8"));
         System.out.print("AEScipher:  \n");
         for (int i = 0, j = 0; i < AEScipher.length; i++, j++) {
             System.out.format("%02X ", AEScipher[i]);
-            aes_out.format("%02X ", AEScipher[i]);
+            //aes_out.format("%02X ", AEScipher[i]);
             if (j >= 15) {
                 System.out.println("");
                 j = -1;
             }
         }
         System.out.println();
+        aes_out.write(AEScipher);
         aes_out.close();
         return cipher.doFinal(dsMsg.getBytes("UTF-8"));
     }
